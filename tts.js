@@ -15,6 +15,9 @@ var params = [];
 var promiseCount = 0;
 var myPromises = [];
 
+/// This object holds all of the data that the text to speech returns
+var returnData={};
+
 
 var inputURL=process.argv[2];
 var inputURLMD5=md5(inputURL);
@@ -75,18 +78,16 @@ request(process.argv[2], function (error, response, html) {
 
 			var promise = new Promise(function (resolve, reject) {
 					console.log("Started promise "+promiseCount);
-						var returnData={};
 						returnData.params=params[i];
 
 //					console.log(params[i]);
 
-			
+					var fs = require('fs'),
+ 
 
 					text_to_speech.synthesize(params[i], function(err, res) {
 						returnData.res=res;
-						
 						resolve(returnData);
-
 
 					});
 			});
@@ -103,34 +104,57 @@ request(process.argv[2], function (error, response, html) {
 			    console.log('Got data! Promise fulfilled. ');
 				/// Write the file after returned
 
-					var fs = require('fs');
-					fs.writeFile(data.params.fileName, data.res, function(err) {
-					    if(err) {
-					        return console.log(err);
-					    }
 
-					    console.log("The file was saved! "+data.params.fileName);
+
+					// var fs = require('fs');
+					// fs.writeFile(data.params.fileName, data.res, function(err) {
+					//     if(err) {
+					//         return console.log(err);
+					//     }
+
+					//     console.log("The file was saved! "+data.params.fileName);
 				console.log("Promise resolved: "+promiseCount);
 
 				//	if all promises are returned then we should do the assembly of the files
 				if(promiseCount==0){
 					console.log("Got em all!");
 
-					var fs = require('fs'),
-    files = fs.readdirSync('./audio/'+inputURLMD5),
-    clips = [];
-console.log(files);
 
-files.forEach(function (file) {
 
-	if(file.substring(0, 32)==data.params.fileName.substring(6, data.params.fileName.length-7)){
-    	clips.push(file.substring(0));  
-	}
-});
 
-clips.sort(function (a, b) {
-    return a - b;
-});
+
+
+
+ 					var fs = require('fs'),
+
+    var filehandle = fs.createWriteStream('./audio/'+inputURLMD5+"/"+pageTitleNoSpaces+".wav");
+
+     var file = fs.readdirSync('./audio/'+inputURLMD5+"/"+pageTitleNoSpaces+".wav");
+
+    currentfile = './audio/' + clips.shift() + '.wav';
+    stream = fs.createReadStream(file);
+    stream.pipe(dhh, {end: false});
+    stream.on("end", function() {
+        console.log(currentfile + ' appended');
+        main();        
+    });
+
+
+
+
+//     clips = [];
+// console.log(files);
+
+// files.forEach(function (file) {
+
+// 	if(file.substring(0, 32)==data.params.fileName.substring(6, data.params.fileName.length-7)){
+//     	clips.push(file.substring(0));  
+// 	}
+// });
+
+// clips.sort(function (a, b) {
+//     return a - b;
+// });
 
 
 
