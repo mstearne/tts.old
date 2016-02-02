@@ -24,7 +24,18 @@ coverage
 build/Release
 
 # Dependency directory
-node_modules
+#node_modules
+#!node_modules/plain-ffmpeg/*
+#!node_modules/ffmpeg-static/*
+
+!node_modules/
+
+node_modules/*
+!node_modules/plain-ffmpeg/
+!node_modules/ffmpeg-static/
+
+node_modules/ffmpeg-static/bin/
+
 
 # Optional npm cache directory
 .npm

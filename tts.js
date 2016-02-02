@@ -9,6 +9,9 @@ var Promise = require('promise');
 
 var FFmpeg = require('plain-ffmpeg');
 
+require('buffer-concat');
+
+
 var params = [];
 
 
@@ -16,8 +19,7 @@ var promiseCount = 0;
 var myPromises = [];
 
 /// This object holds all of the data that the text to speech returns
-var returnData={};
-
+var returnData=[];
 
 var inputURL=process.argv[2];
 var inputURLMD5=md5(inputURL);
@@ -38,22 +40,21 @@ request(process.argv[2], function (error, response, html) {
 
 
 		var pageBody = data.text;
-
 		/// we need to make the story short because of the API
-
 		pageBody=pageTitle+". "+pageBody;
 
-		var page=pageBody.match(/[\s\S]{1,5000}/g)
+		var page=pageBody.match(/[\s\S]{1,4800}/g)
 
+//		console.log(pageBody);
 		console.log(page);
 		console.log(page.length);
 		console.log(pageTitleNoSpaces);
-
 		console.log(pageBody.length+" characters.");
+		if(pageBody.length>10000){
+			console.log("+++++ Hey this is a long article. It may take a minute to voicify.");
+		}
 		console.log(page.length+" parts in the article.");
-
 		console.log("Title: "+data.title);
-
 
 		var watson = require('watson-developer-cloud');
 		var text_to_speech = watson.text_to_speech({
@@ -66,8 +67,9 @@ request(process.argv[2], function (error, response, html) {
 
 		for(var i=0;i<page.length;i++){
 
+			
 
-			 params[i] = {
+			 params = {
 			  text: page[i],
 			  voice: 'en-US_MichaelVoice', // Optional voice
 			  accept: 'audio/wav',
@@ -78,117 +80,154 @@ request(process.argv[2], function (error, response, html) {
 
 			var promise = new Promise(function (resolve, reject) {
 					console.log("Started promise "+promiseCount);
-						returnData.params=params[i];
+						returnData[promiseCount]=params;
+						text_to_speech.synthesize(params, function(err, res) {
 
-//					console.log(params[i]);
+							if(err){
+								console.log("===================================================");
+								console.log(err);
+								console.log("===================================================");
+							}
 
-					var fs = require('fs'),
- 
-
-					text_to_speech.synthesize(params[i], function(err, res) {
-						returnData.res=res;
-						resolve(returnData);
-
-					});
+							returnData[promiseCount].res=res;
+							returnData[promiseCount].promiseItem=promiseCount;
+							// console.log("returnData in tts");
+							// console.log(returnData);
+							resolve(returnData[promiseCount]);
+						});
 			});
-
-
 
 			promise.then(function(data) {
 
-				//We resolved a promise, decrement the counter
-				promiseCount--;
+							 console.log("returnData and data in resolve");
+							// console.log(returnData);
+							 console.log(data);
 
+			//We resolved a promise, decrement the counter
+			promiseCount--;
 
-//console.log(data);
-			    console.log('Got data! Promise fulfilled. ');
-				/// Write the file after returned
+			//console.log(data);
+		    console.log('Got data! Promise fulfilled. ');
 
-
-
-					// var fs = require('fs');
-					// fs.writeFile(data.params.fileName, data.res, function(err) {
-					//     if(err) {
-					//         return console.log(err);
-					//     }
-
-					//     console.log("The file was saved! "+data.params.fileName);
-				console.log("Promise resolved: "+promiseCount);
+			console.log("Promise resolved: "+promiseCount);
 
 				//	if all promises are returned then we should do the assembly of the files
 				if(promiseCount==0){
-					console.log("Got em all!");
+					console.log("Got em promises!");
+
+					var allBinaryData= [];
+					var allBinaryDataSize=0;
+
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log(returnData);
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+					console.log("all return data");
+
+console.log("returnData length");
+console.log(returnData.length);
+
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+//					returnData.sort(compare);
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
+					console.log("all return data sorted");
 
 
+					for(var k=1;k<returnData.length;k++){
+						if(returnData[k].res){
+							allBinaryDataSize += returnData[k].res.length;
+							allBinaryData.push(returnData[k].res);
+						}
+					}
+
+					console.log("new allBinaryData");
+					console.log(allBinaryData);
+					console.log(allBinaryDataSize);
+
+					var allBinaryDataToWrite = Buffer.concat(allBinaryData, allBinaryDataSize);
+
+					console.log("allBinaryData");
+					console.log(allBinaryDataToWrite);
+
+					var fs = require('fs');
+
+					console.log("allBinaryData X");
+
+ 					var outputFileWAV='audio/'+inputURLMD5+'/'+pageTitleNoSpaces+'.wav';
+
+					var fs = require('fs');
+					var wstream = fs.createWriteStream(outputFileWAV);
+					var buffer = allBinaryDataToWrite;
+					wstream.write(buffer);
+					wstream.end();
+
+				    console.log("The file was saved as "+'./audio/'+inputURLMD5+"/"+pageTitleNoSpaces+".wav");
 
 
+					//  fs.writeFile('./audio/'+inputURLMD5+"/"+pageTitleNoSpaces+".wav", allBinaryDataToWrite, function(err) {
+					//  	console.log(err);
+
+					//     if(err) {
+
+					//         return console.log(err);
+					//     }
+					//     console.log("The file was saved as "+'./audio/'+inputURLMD5+"/"+pageTitleNoSpaces+".wav");
+					// });
 
 
+					var FFmpeg = require('plain-ffmpeg');
+					var outputFile='audio/'+inputURLMD5+'/'+pageTitleNoSpaces+'.m4a';
 
- 					var fs = require('fs'),
+					var options = {
+						global: {
+							'-y': null,
+						},
+						input: {
+							'-i': './audio/'+inputURLMD5+"/"+pageTitleNoSpaces+".wav"
 
-    var filehandle = fs.createWriteStream('./audio/'+inputURLMD5+"/"+pageTitleNoSpaces+".wav");
+						},
+						output: {
+							'-b:a': '160k',
+							'-filter:a': 'atempo=1.25',
+							'outputFile': outputFile
+						}
+					}
 
-     var file = fs.readdirSync('./audio/'+inputURLMD5+"/"+pageTitleNoSpaces+".wav");
+					console.log(options);
+					var ffmpeg = new FFmpeg(options);
+					ffmpeg.start();
 
-    currentfile = './audio/' + clips.shift() + '.wav';
-    stream = fs.createReadStream(file);
-    stream.pipe(dhh, {end: false});
-    stream.on("end", function() {
-        console.log(currentfile + ' appended');
-        main();        
-    });
-
-
-
-
-//     clips = [];
-// console.log(files);
-
-// files.forEach(function (file) {
-
-// 	if(file.substring(0, 32)==data.params.fileName.substring(6, data.params.fileName.length-7)){
-//     	clips.push(file.substring(0));  
-// 	}
-// });
-
-// clips.sort(function (a, b) {
-//     return a - b;
-// });
-
-
-
-// /Users/blaze/node_modules/ffmpeg-static/bin/darwin/x64/ffmpeg -f concat -i <(for f in ./audio/*.wav; do echo "file '$PWD/$f'"; done) -c copy audio/output.wav; /Users/blaze/node_modules/ffmpeg-static/bin/darwin/x64/ffmpeg -i audio/output.wav -b:a 160k -filter:a "atempo=1.25" audio/article.m4a; rm audio/output.wav; open audio/article.m4a
-
-// var ffmpeg = new FFmpeg({
-//     global: {'-y': null},
-//     input: {
-//         '-i ': "audio/db73fa4560a06c388b8817a4037af276_00.wav"
-//     },
-//     output: {
-//         'audio/db73fa4560a06c388b8817a4037af276_00.m4a'
-//     }
-// });
-// ffmpeg.start();
-// ffmpeg.on('progress', function(progress) {
-// 	console.log(progress);
-// })
-
-
-
-
-console.log(clips);
-
-
-
-
+//					response.send("http://readmystory.com/"+outputFile);
+					console.log("http://readmystory.com/"+outputFile);
 
 
 				}
-
-
-					})
-
 			}, function(error) {
 			    console.log('Promise rejected.');
 			    console.log(error.message);
@@ -197,14 +236,14 @@ console.log(clips);
 
 		}
 
-
 }  
 });
+
+
 
 function chunkString(str, length) {
   return str.match(new RegExp('.{1,' + length + '}', 'g'));
 }
-
 
 function zeroFill( number, width )
 {
@@ -216,5 +255,12 @@ function zeroFill( number, width )
   return number + ""; // always return a string
 }
 
-
+function compare(a,b) {
+  if (a.promiseItem < b.promiseItem)
+    return -1;
+  else if (a.promiseItem > b.promiseItem)
+    return 1;
+  else 
+    return 0;
+}
 
